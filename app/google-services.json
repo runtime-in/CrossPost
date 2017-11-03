@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "26772993288",
+    "project_id": "firebase-cross-post"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:26772993288:android:4d14eec2326451e3",
+        "android_client_info": {
+          "package_name": "runtime.in.crosspost"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "26772993288-mheh20j4ev3vuqu7622crcv44dpmf9ok.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "runtime.in.crosspost",
+            "certificate_hash": "cc657eac6718bc572757543c98e163cab82589dd"
+          }
+        },
+        {
+          "client_id": "26772993288-ee2pvhtan570qud5k95dajk24ujn0vgh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAFAxqBai1ALXQING2BG-X9xLk9PkAgq3E"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 1
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
