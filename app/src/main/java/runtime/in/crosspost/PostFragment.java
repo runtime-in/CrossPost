@@ -4,6 +4,7 @@ import android.app.Fragment;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -132,7 +133,8 @@ public class PostFragment extends Fragment implements View.OnClickListener {
                 // By default, the library will automatically refresh tokens when it
                 // can, but this can be turned off by setting
                 // dfp.api.refreshOAuth2Token=false in your ads.properties file.
-                .setAccessType("offline").build();
+                .setAccessType("offline")
+                .build();
 
 // This command-line server-side flow example requires the user to open the
 // authentication URL in their browser to complete the process. In most
@@ -149,74 +151,151 @@ public class PostFragment extends Fragment implements View.OnClickListener {
         String code = br.readLine();
 // End of command line prompt for the authorization code.
 
-        final GoogleTokenResponse tokenResponse = null;
-        new AsyncTask<GoogleTokenResponse, String, GoogleTokenResponse>() {
+        String googleAccessToken = PreferenceManager.getDefaultSharedPreferences(PostFragment.this.getActivity()).getString("googleAccessToken", null);
+
+        final GoogleTokenResponse tokenResponse = new GoogleTokenResponse();
+        tokenResponse.setAccessToken(googleAccessToken);
+
+        GoogleCredential credential = new GoogleCredential().setAccessToken(googleAccessToken);
+
+//        GoogleCredential credential = new GoogleCredential.Builder()
+//                .setTransport(new NetHttpTransport())
+//                .setJsonFactory(new JacksonFactory())
+//                .setClientSecrets(CLIENT_ID, CLIENT_SECRET)
+//                .addRefreshListener(new CredentialRefreshListener() {
+//                    @Override
+//                    public void onTokenResponse(Credential credential, TokenResponse tokenResponse) {
+//                        // Handle success.
+//                        System.out.println("Credential was refreshed successfully.");
+//                    }
+//
+//                    @Override
+//                    public void onTokenErrorResponse(Credential credential,
+//                                                     TokenErrorResponse tokenErrorResponse) {
+//                        // Handle error.
+//                        System.err.println("Credential was not refreshed successfully. "
+//                                + "Redirect to error page or login screen.");
+//                    }
+//                })
+//                // You can also add a credential store listener to have credentials
+//                // stored automatically.
+//                //.addRefreshListener(new CredentialStoreRefreshListener(userId, credentialStore))
+//                .build();
+
+// Set authorized credentials.
+        credential.setFromTokenResponse(tokenResponse);
+// Though not necessary when first created, you can manually refresh the
+// token, which is needed after 60 minutes.
+        try {
+            credential.refreshToken();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+// Create a new authorized API client
+        final PlusDomains plusDomains = new PlusDomains.Builder(new NetHttpTransport(), new JacksonFactory(), credential).build();
+        final Activity activity = new Activity()
+                .setObject(new Activity.PlusDomainsObject().setOriginalContent(text))
+                .setAccess(acl);
+
+        new AsyncTask<String, String, String>() {
             @Override
             protected void onPreExecute() {
                 super.onPreExecute();
             }
 
             @Override
-            protected GoogleTokenResponse doInBackground(GoogleTokenResponse... tokenResponse) {
+            protected String doInBackground(String... strings) {
                 try {
-                    tokenResponse[0] = flow.newTokenRequest("4/0HD3F8U4UxsuUqc6iSqXLArLb5Rb9DzrzkVVWeQ1H7w")
-                            .setRedirectUri(REDIRECT_URI).execute();
+                    plusDomains.activities().insert("me", activity).execute();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-                return tokenResponse[0];
+                return null;
             }
 
             @Override
-            protected void onPostExecute(GoogleTokenResponse tokenResponse) {
-                super.onPostExecute(tokenResponse);
-
-                GoogleCredential credential = new GoogleCredential.Builder()
-                        .setTransport(new NetHttpTransport())
-                        .setJsonFactory(new JacksonFactory())
-                        .setClientSecrets(CLIENT_ID, CLIENT_SECRET)
-                        .addRefreshListener(new CredentialRefreshListener() {
-                            @Override
-                            public void onTokenResponse(Credential credential, TokenResponse tokenResponse) {
-                                // Handle success.
-                                System.out.println("Credential was refreshed successfully.");
-                            }
-
-                            @Override
-                            public void onTokenErrorResponse(Credential credential,
-                                                             TokenErrorResponse tokenErrorResponse) {
-                                // Handle error.
-                                System.err.println("Credential was not refreshed successfully. "
-                                        + "Redirect to error page or login screen.");
-                            }
-                        })
-                        // You can also add a credential store listener to have credentials
-                        // stored automatically.
-                        //.addRefreshListener(new CredentialStoreRefreshListener(userId, credentialStore))
-                        .build();
-
-// Set authorized credentials.
-                credential.setFromTokenResponse(tokenResponse);
-// Though not necessary when first created, you can manually refresh the
-// token, which is needed after 60 minutes.
-                try {
-                    credential.refreshToken();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-// Create a new authorized API client
-                PlusDomains plusDomains = new PlusDomains.Builder(new NetHttpTransport(), new JacksonFactory(), credential).build();
-                try {
-                    Activity activity = new Activity()
-                            .setObject(new Activity.PlusDomainsObject().setOriginalContent(text))
-                            .setAccess(acl);
-                    activity = plusDomains.activities().insert("me", activity).execute();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+            protected void onPostExecute(String s) {
+                super.onPostExecute(s);
             }
         }.execute();
+
+
+//        new AsyncTask<GoogleTokenResponse, String, GoogleTokenResponse>() {
+//            @Override
+//            protected void onPreExecute() {
+//                super.onPreExecute();
+//            }
+//
+//            @Override
+//            protected GoogleTokenResponse doInBackground(GoogleTokenResponse... tokenResponse) {
+//                try {
+//                    if (tokenResponse.length > 0) {
+//                        tokenResponse[0] = flow.newTokenRequest("4/eONARx0kGUa7UZRFYWyIq9iUbTdnWYA6gzZgnxYD9os")
+//                                .setRedirectUri(REDIRECT_URI).execute();
+//                    }
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+//                if (tokenResponse.length > 0)
+//                    return tokenResponse[0];
+//                else
+//                    return null;
+//            }
+//
+//            @Override
+//            protected void onPostExecute(GoogleTokenResponse tokenResponse) {
+//                super.onPostExecute(tokenResponse);
+//                if(tokenResponse == null){
+//                    return;
+//                }
+//
+//                GoogleCredential credential = new GoogleCredential.Builder()
+//                        .setTransport(new NetHttpTransport())
+//                        .setJsonFactory(new JacksonFactory())
+//                        .setClientSecrets(CLIENT_ID, CLIENT_SECRET)
+//                        .addRefreshListener(new CredentialRefreshListener() {
+//                            @Override
+//                            public void onTokenResponse(Credential credential, TokenResponse tokenResponse) {
+//                                // Handle success.
+//                                System.out.println("Credential was refreshed successfully.");
+//                            }
+//
+//                            @Override
+//                            public void onTokenErrorResponse(Credential credential,
+//                                                             TokenErrorResponse tokenErrorResponse) {
+//                                // Handle error.
+//                                System.err.println("Credential was not refreshed successfully. "
+//                                        + "Redirect to error page or login screen.");
+//                            }
+//                        })
+//                        // You can also add a credential store listener to have credentials
+//                        // stored automatically.
+//                        //.addRefreshListener(new CredentialStoreRefreshListener(userId, credentialStore))
+//                        .build();
+//
+//// Set authorized credentials.
+//                credential.setFromTokenResponse(tokenResponse);
+//// Though not necessary when first created, you can manually refresh the
+//// token, which is needed after 60 minutes.
+//                try {
+//                    credential.refreshToken();
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+//
+//// Create a new authorized API client
+//                PlusDomains plusDomains = new PlusDomains.Builder(new NetHttpTransport(), new JacksonFactory(), credential).build();
+//                try {
+//                    Activity activity = new Activity()
+//                            .setObject(new Activity.PlusDomainsObject().setOriginalContent(text))
+//                            .setAccess(acl);
+//                    activity = plusDomains.activities().insert("me", activity).execute();
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        }.execute(tokenResponse);
 
     }
 

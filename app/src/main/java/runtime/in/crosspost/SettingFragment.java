@@ -2,7 +2,9 @@ package runtime.in.crosspost;
 
 import android.app.Fragment;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentActivity;
@@ -13,6 +15,8 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.Toast;
 
+import com.google.android.gms.auth.GoogleAuthException;
+import com.google.android.gms.auth.GoogleAuthUtil;
 import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
@@ -20,11 +24,14 @@ import com.google.android.gms.auth.api.signin.GoogleSignInResult;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 
+import java.io.IOException;
+import java.util.logging.Logger;
+
 /**
  * Created by Zulkarnain Shah on 02/11/17.
  */
 
-public class SettingFragment extends Fragment implements GoogleApiClient.OnConnectionFailedListener{
+public class SettingFragment extends Fragment implements GoogleApiClient.OnConnectionFailedListener {
 
     Button btnFacebook, btnGoogle, btnTwitter, btnInstagram;
     public static SettingFragment settingFragment;
@@ -107,17 +114,47 @@ public class SettingFragment extends Fragment implements GoogleApiClient.OnConne
             handleSignInResult(result);
         }
     }
+
     private void handleSignInResult(GoogleSignInResult result) {
         Log.d(TAG, "handleSignInResult:" + result.isSuccess());
         if (result.isSuccess()) {
             // Signed in successfully, show authenticated UI.
-            GoogleSignInAccount acct = result.getSignInAccount();
-            Toast.makeText(this.getActivity(),"SUCCESS : "+ acct.getDisplayName(),Toast.LENGTH_LONG).show();
+            final GoogleSignInAccount acct = result.getSignInAccount();
+            final String scopes = "oauth2:profile email";
+            String token = null;
+            new AsyncTask<String, String, String>() {
+                @Override
+                protected void onPreExecute() {
+                    super.onPreExecute();
+                }
+
+                @Override
+                protected String doInBackground(String... strings) {
+                    try {
+                        String token = GoogleAuthUtil.getToken(getActivity(), acct.getEmail(), scopes);
+                        PreferenceManager.getDefaultSharedPreferences(SettingFragment.this.getActivity()).edit().putString("googleAccessToken",token).commit();
+                        System.out.println();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (GoogleAuthException e) {
+                        e.printStackTrace();
+                    }
+                    return null;
+                }
+
+                @Override
+                protected void onPostExecute(String s) {
+                    super.onPostExecute(s);
+                }
+            }.execute();
+
+
+            Toast.makeText(this.getActivity(), "SUCCESS : " + acct.getEmail(), Toast.LENGTH_LONG).show();
 //            mStatusTextView.setText(getString(R.string.signed_in_fmt, acct.getDisplayName()));
 //            updateUI(true);
         } else {
             // Signed out, show unauthenticated UI.
-            Toast.makeText(this.getActivity(),"FAILED",Toast.LENGTH_LONG).show();
+            Toast.makeText(this.getActivity(), "FAILED", Toast.LENGTH_LONG).show();
 //            updateUI(false);
         }
     }
